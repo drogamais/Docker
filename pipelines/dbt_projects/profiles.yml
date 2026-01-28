@@ -1,4 +1,5 @@
 dbt_projetos:
+  target: dev
   outputs:
     dev:
       type: dremio
@@ -7,5 +8,4 @@ dbt_projetos:
       use_ssl: False                 # Essencial para conexões locais sem certificado
       user: inteligencia
       password: dremio123
-      schema: views
   target: dev

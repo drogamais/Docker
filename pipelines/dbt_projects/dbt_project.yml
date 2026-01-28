@@ -11,12 +11,13 @@ analysis-paths: ["analyses"]
 test-paths: ["tests"]
 seed-paths: ["seeds"]
 macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
 
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# CONFIGURAÇÃO DOS MODELOS
 models:
-  dbt_projetos:
-    # Configuração global
-    +materialized: view
 
-    desativados:
-      +enabled: false
       
