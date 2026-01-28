@@ -48,6 +48,6 @@ if __name__ == "__main__":
         name="Pipeline Comercial Vermelho",
         work_pool_name="process-pool",
         schedules=[
-            CronSchedule(cron="30 8 * * *", timezone="America/Sao_Paulo")
+            CronSchedule(cron="0 9 * * *", timezone="America/Sao_Paulo")
         ],
     )
