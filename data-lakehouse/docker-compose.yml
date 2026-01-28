@@ -1,0 +1,45 @@
+services:
+
+  dremio:
+    platform: linux/x86_64
+    image: dremio/dremio-oss:25.2.0
+    ports:
+      - 9047:9047
+      - 31010:31010
+      - 32010:32010
+    container_name: dremio
+    volumes:
+      - ./dremio_data:/opt/dremio/data
+
+  minioserver:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    ports:
+      - 9000:9000
+      - 9001:9001
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    container_name: minioserver
+    command: server /data --console-address ":9001"
+    volumes:
+      - ./minio_data:/data
+  
+  nessie:
+    image: projectnessie/nessie:0.76.6
+    container_name: nessie
+    user: root  # Mantém root, seguro morreu de velho
+    ports:
+      - "19120:19120"
+    environment:
+      # Apenas avisamos que queremos RocksDB.
+      # NÃO definimos o path aqui, deixamos ele usar o default.
+      NESSIE_VERSION_STORE_TYPE: ROCKSDB
+    volumes:
+      # O PULO DO GATO 🐱
+      # Mapeamos nossa pasta local para ONDE O NESSIE QUER ESCREVER por padrão
+      - ./nessie_data:/tmp/nessie-rocksdb-store
+
+networks:
+  default:
+    name: iceberg_env
+    driver: bridge

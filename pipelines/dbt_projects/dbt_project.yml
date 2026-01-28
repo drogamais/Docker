@@ -1,0 +1,22 @@
+name: 'dbt_projetos'
+version: '1.0.0'
+config-version: 2
+
+# Nome do perfil que você configurou no seu arquivo profiles.yml
+profile: 'dbt_projetos' 
+
+# Onde o dbt deve procurar os arquivos
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+
+models:
+  dbt_projetos:
+    # Configuração global
+    +materialized: view
+
+    desativados:
+      +enabled: false
+      

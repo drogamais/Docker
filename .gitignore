@@ -1,0 +1,12 @@
+data_portainer
+login.txt
+db_prefect
+__pycache__
+target
+.user.yml
+logs
+dbt_packages
+dremio_data
+minio_data
+nessie_data
+.env

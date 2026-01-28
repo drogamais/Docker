@@ -1,0 +1,14 @@
+nessie:
+    image: projectnessie/nessie:0.76.6
+    container_name: nessie
+    user: root  # Mantém root, seguro morreu de velho
+    ports:
+      - "19120:19120"
+    environment:
+      # Apenas avisamos que queremos RocksDB.
+      # NÃO definimos o path aqui, deixamos ele usar o default.
+      NESSIE_VERSION_STORE_TYPE: ROCKSDB
+    volumes:
+      # O PULO DO GATO 🐱
+      # Mapeamos nossa pasta local para ONDE O NESSIE QUER ESCREVER por padrão
+      - ./nessie_data:/tmp/nessie-rocksdb-store

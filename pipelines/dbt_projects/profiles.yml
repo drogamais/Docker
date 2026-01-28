@@ -1,0 +1,11 @@
+dbt_projetos:
+  outputs:
+    dev:
+      type: dremio
+      software_host: 192.168.21.124
+      port: 9047
+      use_ssl: False                 # Essencial para conexões locais sem certificado
+      user: inteligencia
+      password: dremio123
+      schema: views
+  target: dev

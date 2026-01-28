@@ -1,0 +1,15 @@
+services:
+  portainer:
+    image: portainer/portainer-ce:2.33.6
+    container_name: portainer
+    restart: always
+    ports:
+      - "9443:9443"
+      - "8000:8000"
+    volumes:
+      # No Windows, o Docker Desktop resolve esse caminho automaticamente
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Salva na pasta 'data' dentro da pasta do seu docker-compose.yml
+      - ./data_portainer:/data
+
+# Note que a seção 'volumes:' no final foi removida
