@@ -8,4 +8,6 @@ dbt_projetos:
       use_ssl: False                 # Essencial para conexões locais sem certificado
       user: inteligencia
       password: dremio123
+      datalake: thrash
+      database: thrash
   target: dev

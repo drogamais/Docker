@@ -2,10 +2,12 @@ name: 'dbt_projetos'
 version: '1.0.0'
 config-version: 2
 
-# Nome do perfil que você configurou no seu arquivo profiles.yml
-profile: 'dbt_projetos' 
+on-run-start: 
+  - "{{ prevent_full_run() }}" # prevenção contra run de todos os .sql
+  - "USE REFERENCE main IN nessie"
 
-# Onde o dbt deve procurar os arquivos
+profile: 'dbt_projetos'
+
 model-paths: ["models"]
 analysis-paths: ["analyses"]
 test-paths: ["tests"]
@@ -19,5 +21,9 @@ clean-targets:
 
 # CONFIGURAÇÃO DOS MODELOS
 models:
+  dbt_projetos:
+    # Configurações globais (opcional)
+    +materialized: view 
 
-      
+    desativados:        
+      +enabled: false   # O '+' desliga tudo lá dentro
