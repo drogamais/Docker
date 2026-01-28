@@ -1,8 +1,8 @@
 {{ config(
     materialized='table',
     datalake='nessie',
-    schema='silver'
-    partition_by=[month('data_emissao')],
+    schema='silver',
+    partition_by=['month(data_emissao)'],
     alias='silver_acode_compras_produto_comercial'
 ) }}
 

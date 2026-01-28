@@ -29,7 +29,8 @@ def pipeline_comercial():
 
     # Aqui você seleciona "um por um" de forma visual e organizada
     models_escolhidos = [
-        "silver_acode_compras_produto_comercial",
+        #"silver_acode_compras_produto_comercial",
+        "dim_fabricante",
         "dim_fornecedor",
         "dim_grupo_subclasse",
         "dim_marca",
