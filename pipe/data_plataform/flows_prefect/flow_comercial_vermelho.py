@@ -6,14 +6,14 @@ PY_PATH = "/app/dbt/comercial_vermelho/python"
 
 @flow(name="Pipeline Comercial Vermelho", timeout_seconds=7200)
 def pipeline():
-    # 0. Debug
-    debug_ambiente(project_path=DBT_PATH)
+    # 0. debug, clean, deps do dbt
+    # debug_ambiente(project_path=DBT_PATH)
     
     # 1. Silver
-    silver = dbt_task(modelo="silver_acode_compras_produto_comercial", project_path=DBT_PATH)
+    # silver = dbt_task(modelo="silver_acode_compras_produto_comercial", project_path=DBT_PATH)
 
     # 2. Marts
-    dim = dbt_task(script_name="gold_acode_compras_produto_comercial", python_base_path=PY_PATH, wait_for=[silver])
+    dim = python_task(script_name="gold_acode_compras_produto_comercial", python_base_path=PY_PATH)
     """
     marts = [
         "dim_fabricante_acode", 
@@ -29,7 +29,7 @@ def pipeline():
 
     # 3. Gold
     # gold = dbt_task(modelo="gold_acode_compras_produto_comercial", project_path=DBT_PATH, wait_for=[silver])
-    dbt_task(script_name="gold_acode_compras_produto_comercial", python_base_path=PY_PATH, wait_for=[dim])
+    python_task(script_name="gold_acode_compras_produto_comercial", python_base_path=PY_PATH, wait_for=[dim])
 
     # 4. Python(correções)
     # python_task(script_name="correcoes_mariadb", python_base_path=PY_PATH, wait_for=[gold])
