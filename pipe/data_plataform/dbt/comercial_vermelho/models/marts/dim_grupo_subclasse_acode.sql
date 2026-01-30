@@ -11,7 +11,7 @@
 SELECT 
     -- MD5 gera um hash de 32 caracteres (hex) que serve como UUID determinístico
     -- O "|| ''" força o Dremio a tratar como texto e não tentar converter para número
-    MD5(CAST(Grupo AS VARCHAR) || CAST(Sub_Classe AS VARCHAR)) as id_grupo_subclasse, 
+    hash(CAST(Grupo AS VARCHAR) || CAST(Sub_Classe AS VARCHAR)) as id_grupo_subclasse, 
     CAST(Grupo AS VARCHAR) as Grupo, 
     CAST(Sub_Classe AS VARCHAR) as Sub_Classe
 

@@ -9,7 +9,7 @@
 
 
 SELECT 
-    MD5(CAST(Fabricante AS VARCHAR)) as id_fabricante,
+    hash(CAST(Fabricante AS VARCHAR)) as id_fabricante,
     CAST(Fabricante AS VARCHAR) as Fabricante
 
 -- FROM {{ ref('silver_acode_compras_produto_comercial') }}

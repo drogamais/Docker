@@ -25,10 +25,11 @@ def pipeline():
         dbt_task(modelo=m, project_path=DBT_PATH, wait_for=[silver])
 
     # 3. Gold
-    gold = dbt_task(modelo="gold_acode_compras_produto_comercial", project_path=DBT_PATH, wait_for=[silver])
+    # gold = dbt_task(modelo="gold_acode_compras_produto_comercial", project_path=DBT_PATH, wait_for=[silver])
+    dbt_task(script_name="gold_acode_compras_produto_comercial", python_base_path=PY_PATH, wait_for=[silver])
 
     # 4. Python(correções)
-    python_task(script_name="correcoes_mariadb", python_base_path=PY_PATH, wait_for=[gold])
+    # python_task(script_name="correcoes_mariadb", python_base_path=PY_PATH, wait_for=[gold])
 
 if __name__ == "__main__":
     gerenciar_run(

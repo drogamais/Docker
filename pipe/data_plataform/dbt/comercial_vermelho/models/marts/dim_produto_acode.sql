@@ -9,7 +9,7 @@
 
 
 SELECT 
-    MD5(CAST(EAN AS VARCHAR) || CAST(Produto AS VARCHAR)) as id_produto,
+    hash(CAST(EAN AS VARCHAR) || CAST(Produto AS VARCHAR)) as id_produto,
     CAST(EAN AS VARCHAR) as gtin,
     CAST(Produto AS VARCHAR) as Produto,
     CONCAT(CAST(EAN AS VARCHAR), ' - ', CAST(Produto AS VARCHAR)) as Produto_completo

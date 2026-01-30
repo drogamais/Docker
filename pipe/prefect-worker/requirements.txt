@@ -7,3 +7,5 @@ duckdb
 sqlalchemy
 pymysql
 cryptography
+pandas
+polars

@@ -11,11 +11,11 @@
 
 SELECT
     -- Chaves (Surrogate Keys)
-    MD5(CAST(EAN AS VARCHAR) || CAST(Produto AS VARCHAR)) AS id_produto,
-    MD5(CAST(Desc_Marca AS VARCHAR)) AS id_marca,
-    MD5(CAST(Fornecedor AS VARCHAR)) AS id_fornecedor,
-    MD5(CAST(Fabricante AS VARCHAR)) as id_fabricante,
-    MD5(CAST(Grupo AS VARCHAR) || CAST(Sub_Classe AS VARCHAR)) AS id_grupo_subclasse,
+    hash(CAST(EAN AS VARCHAR) || CAST(Produto AS VARCHAR)) AS id_produto,
+    hash(CAST(Desc_Marca AS VARCHAR)) AS id_marca,
+    hash(CAST(Fornecedor AS VARCHAR)) AS id_fornecedor,
+    hash(CAST(Fabricante AS VARCHAR)) as id_fabricante,
+    hash(CAST(Grupo AS VARCHAR) || CAST(Sub_Classe AS VARCHAR)) AS id_grupo_subclasse,
     
     -- Contexto
     CAST(Loja_CNPJ AS VARCHAR(18)) AS Loja_CNPJ,
