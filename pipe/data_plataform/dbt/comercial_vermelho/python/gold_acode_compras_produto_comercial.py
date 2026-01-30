@@ -1,15 +1,26 @@
+import os
 import polars as pl
 import sqlalchemy
 import urllib.parse
+from datetime import datetime
+
+# 1. Bloqueio total antes de qualquer operação
+os.environ["AWS_EC2_METADATA_DISABLED"] = "true"
+os.environ["AWS_ACCESS_KEY_ID"] = "minioadmin"
+os.environ["AWS_SECRET_ACCESS_KEY"] = "minioadmin"
 
 def carregar_gold_polars():
-    # 1. Configurações de conexão
-    # S3 / MinIO
+    # 2. Configurações para forçar o driver a ignorar a AWS real
     storage_options = {
         "key": "minioadmin",
         "secret": "minioadmin",
         "endpoint_url": "http://192.168.21.251:9000",
+        "region": "us-east-1",
+        "allow_http": "true",
+        "aws_metadata_strategy": "none", # Fundamental
+        "force_path_style": "true",     # Essencial para MinIO
     }
+
     s3_path = "s3://silver/silver_acode_compras_produto_comercial/**/*.parquet"
 
     # MariaDB
@@ -42,7 +53,7 @@ def carregar_gold_polars():
         pl.col("Qtd_Trib").cast(pl.Float64),
         
         # Timestamp de auditoria
-        pl.lit(pl.datetime.now()).alias("data_atualizacao")
+        pl.lit(datetime.now()).alias("data_atualizacao")
     ]).collect() # Executa o plano de processamento
 
     print(f"✅ Processamento concluído. Linhas para carregar: {len(df_processed)}")

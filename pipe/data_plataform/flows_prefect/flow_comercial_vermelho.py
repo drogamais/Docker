@@ -13,7 +13,7 @@ def pipeline():
     # silver = dbt_task(modelo="silver_acode_compras_produto_comercial", project_path=DBT_PATH)
 
     # 2. Marts
-    dim = python_task(script_name="gold_acode_compras_produto_comercial", python_base_path=PY_PATH)
+    dim = python_task(script_name="dimensoes_comercial_vermelho", python_base_path=PY_PATH)
     """
     marts = [
         "dim_fabricante_acode", 

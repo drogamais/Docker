@@ -1,14 +1,27 @@
+import os
 import polars as pl
 import sqlalchemy
 import urllib.parse
+from datetime import datetime
+
+# 1. Bloqueia a busca de metadados da AWS para evitar o erro de timeout (IP 169.254.169.254)
+os.environ["AWS_EC2_METADATA_DISABLED"] = "true"
+os.environ["AWS_ACCESS_KEY_ID"] = "minioadmin"
+os.environ["AWS_SECRET_ACCESS_KEY"] = "minioadmin"
 
 def carregar_dimensoes_polars():
-    # 1. Configurações de conexão
+    # 2. Configurações de conexão reforçadas para MinIO
     storage_options = {
         "key": "minioadmin",
         "secret": "minioadmin",
         "endpoint_url": "http://192.168.21.251:9000",
+        "region": "us-east-1",
+        "allow_http": "true",
+        "aws_metadata_strategy": "none",
+        "force_path_style": "true",
     }
+    
+    # Se o s3:// continuar dando erro de metadados, você pode testar mudar para s3a://
     s3_path = "s3://silver/silver_acode_compras_produto_comercial/**/*.parquet"
 
     user = "drogamais"
@@ -17,7 +30,7 @@ def carregar_dimensoes_polars():
     database = "dbDrogamais"
     connection_uri = f"mysql+pymysql://{user}:{password}@{host}:3306/{database}"
 
-    print(" Iniciando processamento das Dimensões...")
+    print("🚀 Iniciando processamento das Dimensões...")
 
     # Lazy frame para otimização
     lf = pl.scan_parquet(s3_path, storage_options=storage_options)
@@ -58,12 +71,13 @@ def carregar_dimensoes_polars():
         # Filtra nulos e remove duplicatas
         df_dim = lf.select(cfg["colunas"]).drop_nulls().unique()
 
-        # Gera o ID numérico (Hash)
-        df_dim = df_dim.with_columns(
-            pl.concat_str(cfg["hash_cols"]).hash().alias(cfg["id_col"])
-        )
+        # Gera o ID numérico (Hash) e adiciona data de atualização corrigida
+        df_dim = df_dim.with_columns([
+            pl.concat_str(cfg["hash_cols"]).hash().alias(cfg["id_col"]),
+            pl.lit(datetime.now()).alias("data_atualizacao")
+        ])
 
-        # Renomeia colunas se necessário (ex: Desc_Marca -> nome_marca)
+        # Renomeia colunas se necessário
         if "renames" in cfg:
             df_dim = df_dim.rename(cfg["renames"])
 
@@ -75,7 +89,7 @@ def carregar_dimensoes_polars():
             if_table_exists="replace",
             engine="sqlalchemy"
         )
-        print(f" {table_name} carregada ({len(df_final)} linhas).")
+        print(f"✅ {table_name} carregada ({len(df_final)} linhas).")
 
 if __name__ == "__main__":
     carregar_dimensoes_polars()
