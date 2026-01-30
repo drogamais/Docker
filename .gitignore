@@ -10,3 +10,4 @@ dremio_data
 minio_data
 nessie_data
 .env
+dev.duckdb
