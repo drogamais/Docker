@@ -1,0 +1,29 @@
+# profiles.yml
+comercial_vermelho:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: 'dev.duckdb'
+      threads: 1
+      
+      # 1. Extensões necessárias
+      extensions:
+        - mysql
+        - httpfs
+      
+      # 2. Configurações do MinIO
+      config_options:
+        s3_region: 'us-east-1'
+        s3_endpoint: '192.168.21.251:9000'
+        s3_access_key_id: 'minioadmin'
+        s3_secret_access_key: 'minioadmin'
+        s3_use_ssl: 'false'
+        s3_url_style: 'path'
+
+      disable_transactions: true
+      # 3. SOLUÇÃO DO ERRO: Anexar o banco aqui garante que ele existe antes do dbt rodar
+      attach:
+        - path: 'host=10.48.12.20 port=3306 user=drogamais password=dB$MYSql@2119 database=dbDrogamais'
+          alias: mariadb_end
+          type: mysql  # Isso adiciona o (TYPE mysql) automaticamente

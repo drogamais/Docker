@@ -1,0 +1,22 @@
+# dbt_project.yml
+name: 'comercial_vermelho'
+version: '1.0.0'
+profile: 'comercial_vermelho'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Configuring models
+models:
+  comercial_vermelho:
+    # Config indicated by + and applies to all files under models/example/
+    example:
+      +materialized: view

@@ -9,6 +9,7 @@ services:
     container_name: dremio
     volumes:
       - ./dremio_data:/opt/dremio/data
+      - ./dremio.conf:/opt/dremio/conf/dremio.conf
 
 networks:
   default:
