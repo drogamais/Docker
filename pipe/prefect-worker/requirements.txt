@@ -1,11 +1,6 @@
-
 prefect==3.6.13
-prefect-dbt==0.7.16
-dbt-core==1.11.2
-dbt-duckdb==1.10.0
 duckdb
 sqlalchemy
 pymysql
-cryptography
 pandas
 polars

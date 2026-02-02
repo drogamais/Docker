@@ -31,14 +31,15 @@ def duckdb_csv():
 
         print("🦆 DuckDB: Extraindo dados e gerando CSV...")
         
+        # --- MUDANÇA PRINCIPAL: IDs convertidos para VARCHAR (Texto) ---
         query = f"""
         COPY (
             SELECT 
-                hash(concat(EAN, Produto)) AS id_produto,
-                hash(Desc_Marca) AS id_marca,
-                hash(Fornecedor) AS id_fornecedor,
-                hash(Fabricante) AS id_fabricante,
-                hash(concat(Grupo, Sub_Classe)) AS id_grupo_subclasse,
+                CAST(hash(concat(EAN, Produto)) AS VARCHAR) AS id_produto,
+                CAST(hash(Desc_Marca) AS VARCHAR) AS id_marca,
+                CAST(hash(Fornecedor) AS VARCHAR) AS id_fornecedor,
+                CAST(hash(Fabricante) AS VARCHAR) AS id_fabricante,
+                CAST(hash(concat(Grupo, Sub_Classe)) AS VARCHAR) AS id_grupo_subclasse,
                 
                 CAST(Loja_CNPJ AS VARCHAR) AS loja_cnpj,
                 CAST(data_emissao AS DATE) AS data_emissao,
@@ -81,21 +82,30 @@ def csv_mariadb():
         cursor.execute(f"DROP TABLE IF EXISTS {table_old}")
 
         print(f"🔨 Criando tabela staging: {table_new}")
+        
+        # --- MUDANÇA NO DDL: IDs agora são VARCHAR(50) ---
         ddl = f"""
         CREATE TABLE {table_new} (
             id_fato INT AUTO_INCREMENT PRIMARY KEY,
-            id_produto BIGINT, id_marca BIGINT, id_fornecedor BIGINT,
-            id_fabricante BIGINT, id_grupo_subclasse BIGINT,
-            loja_cnpj VARCHAR(20), data_emissao DATE,
+            id_produto VARCHAR(50), 
+            id_marca VARCHAR(50), 
+            id_fornecedor VARCHAR(50),
+            id_fabricante VARCHAR(50), 
+            id_grupo_subclasse VARCHAR(50),
+            loja_cnpj VARCHAR(20), 
+            data_emissao DATE,
             val_prod_sem_stret DECIMAL(15,4), 
             acode_val_total DECIMAL(15,4),
-            qtd_trib INT, data_atualizacao DATETIME
+            qtd_trib INT, 
+            data_atualizacao DATETIME
         ) ENGINE=Aria TRANSACTIONAL=0 ROW_FORMAT=PAGE;
         """
         cursor.execute(ddl)
 
         # Monitoramento
-        monitor = DBMonitor(**DB_CONFIG)
+        # (Atenção: removi os ** do DB_CONFIG se você ajustou a classe Monitor como conversamos antes. 
+        # Se não ajustou, mantenha os **). Assumindo a versão corrigida:
+        monitor = DBMonitor(DB_CONFIG)
         monitor.start(table_name=table_new, total_bytes_csv=tamanho)
 
         # Carga
@@ -114,6 +124,7 @@ def csv_mariadb():
         
         # Índices
         print("⚙️ Criando índices...")
+        # Índices em colunas de texto curtas (50 chars) são muito rápidos
         indices = [
             f"CREATE INDEX idx_produto ON {table_new} (id_produto)",
             f"CREATE INDEX idx_marca ON {table_new} (id_marca)",
