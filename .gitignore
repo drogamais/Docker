@@ -12,3 +12,5 @@ nessie_data
 .env
 dev.duckdb
 dev.duckdb.wal
+db_prefect
+data

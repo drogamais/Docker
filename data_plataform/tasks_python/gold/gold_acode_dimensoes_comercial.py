@@ -8,7 +8,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
-from settings.config import DB_CONFIG, DUCKDB_SECRET_SQL, setup_minio_env, get_temp_csv_caminho
+from _settings.config import DB_CONFIG, DUCKDB_SECRET_SQL, setup_minio_env, get_temp_csv_caminho
 
 setup_minio_env()
 S3_BASE = "s3://silver/silver_acode_compras_produto_comercial/**/*.parquet"
@@ -24,9 +24,9 @@ DIMENSOES_CONFIG = [
     {
         "tabela": "dim_fornecedor_acode",
         "s3_path": S3_BASE,
-        "colunas_origem": ["Fornecedor"],
-        "hash_cols": ["Fornecedor"],
-        "id_col": "id_fornecedor"
+        "colunas_origem": ["Fornecedor", "Fornecedor_CNPJ"], # Alterado aqui
+        "hash_cols": ["Fornecedor", "Fornecedor_CNPJ"],    # Alterado aqui
+        "id_col": "id_fornecedor",
     },
     {
         "tabela": "dim_marca_acode",
@@ -55,7 +55,7 @@ DIMENSOES_CONFIG = [
 def duckdb_csv(config):
     table_name = config["tabela"]
     csv_filename = f"{table_name}.csv"
-    csv_path_local = get_temp_csv_caminho(csv_filename)
+    CSV_PATH = get_temp_csv_caminho(csv_filename)
     
     print(f"\n📦 [1/3] DuckDB: Processando {table_name}...")
     
@@ -73,7 +73,7 @@ def duckdb_csv(config):
         for col in config["colunas_origem"]:
             novo_nome = config.get("renames", {}).get(col, col)
             # Limpeza e conversão para texto
-            select_cols.append(f"CAST(regexp_replace({col}, '[\n\r;]', '', 'g') AS VARCHAR) AS {novo_nome}")
+            select_cols.append(f"CAST(regexp_replace(\"{col}\", '[\n\r;]', '', 'g') AS VARCHAR) AS \"{novo_nome}\"")
             
         select_str = ", ".join(select_cols)
 
@@ -86,16 +86,16 @@ def duckdb_csv(config):
             SELECT
                 {hash_sql} AS {config['id_col']},
                 {select_str},
-                MAX(data_emissao) AS ultima_emissao,
+                MAX(Ano_Mes) AS Ano_Mes,
                 now() AS data_atualizacao
             FROM read_parquet('{config['s3_path']}')
-            WHERE {config['hash_cols'][0]} IS NOT NULL
-            GROUP BY {indices_group_by}
-        ) TO '{csv_path_local}' (FORMAT CSV, DELIMITER ';', HEADER FALSE);
+            WHERE "{config['hash_cols'][0]}" IS NOT NULL
+            GROUP BY ALL
+        ) TO '{CSV_PATH}' (FORMAT CSV, DELIMITER ';', HEADER FALSE);
         """
         con.execute(query)
         print("   ✅ CSV gerado (IDs como Texto).")
-        return csv_path_local
+        return CSV_PATH
 
     except Exception as e:
         print(f"   ❌ Erro no DuckDB: {e}")
@@ -103,8 +103,8 @@ def duckdb_csv(config):
     finally:
         con.close()
 
-def csv_mariadb(config, csv_path_local):
-    if not csv_path_local or not os.path.exists(csv_path_local):
+def csv_mariadb(config, CSV_PATH):
+    if not CSV_PATH or not os.path.exists(CSV_PATH):
         print("   ⚠️ CSV não encontrado.")
         return
 
@@ -133,8 +133,8 @@ def csv_mariadb(config, csv_path_local):
             colunas_ddl.append(f"`{novo_nome}` VARCHAR(255)")
             colunas_load.append(novo_nome)
             
-        colunas_ddl.append("ultima_emissao DATE")
-        colunas_load.append("ultima_emissao")
+        colunas_ddl.append("Ano_Mes DATE")
+        colunas_load.append("Ano_Mes")
 
         colunas_ddl.append("data_atualizacao DATETIME")
         colunas_load.append("data_atualizacao")
@@ -147,7 +147,7 @@ def csv_mariadb(config, csv_path_local):
         cursor.execute(ddl)
         
         sql_load = f"""
-        LOAD DATA LOCAL INFILE '{csv_path_local}'
+        LOAD DATA LOCAL INFILE '{CSV_PATH}'
         INTO TABLE {table_new}
         FIELDS TERMINATED BY ';' LINES TERMINATED BY '\\n'
         ({', '.join(colunas_load)})
@@ -160,7 +160,7 @@ def csv_mariadb(config, csv_path_local):
             col_nome = config.get("renames", {}).get(config["colunas_origem"][0], config["colunas_origem"][0])
             try:
                 cursor.execute(f"CREATE INDEX idx_busca_{col_nome} ON {table_new} (`{col_nome}`(50))")
-                cursor.execute(f"CREATE INDEX idx_ultima_emissao ON {table_new} (ultima_emissao)")
+                cursor.execute(f"CREATE INDEX idx_Ano_Mes ON {table_new} (Ano_Mes)")
             except: pass
 
         # Swap
@@ -180,9 +180,9 @@ def csv_mariadb(config, csv_path_local):
     finally:
         if conn: conn.close()
 
-def limpar_temp(csv_path_local):
-    if csv_path_local and os.path.exists(csv_path_local):
-        try: os.remove(csv_path_local)
+def limpar_temp(CSV_PATH):
+    if CSV_PATH and os.path.exists(CSV_PATH):
+        try: os.remove(CSV_PATH)
         except: pass
 
 if __name__ == "__main__":

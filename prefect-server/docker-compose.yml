@@ -7,8 +7,13 @@ services:
       - POSTGRES_USER=prefect
       - POSTGRES_PASSWORD=prefect
       - POSTGRES_DB=prefect
+      # Adicionei aqui para os logs do banco ficarem certos também
+      - TZ=America/Sao_Paulo 
     volumes:
       - ./db_prefect:/var/lib/postgresql/data
+      # Adicionei aqui também
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U prefect -d prefect"]
       interval: 10s
@@ -23,19 +28,19 @@ services:
       - "4200:4200"
     entrypoint: ["prefect", "server", "start", "--host", "0.0.0.0"]
     environment:
-      # Conexão interna com o banco (funciona pois estão no mesmo arquivo)
+      - TZ=America/Sao_Paulo
       - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://prefect:prefect@postgres-database:5432/prefect
-      
-      # IMPORTANTE: Se for acessar de outros PCs, coloque o IP DA MÁQUINA aqui, não localhost
-      # Ex: http://192.168.0.10:4200/api
-      - PREFECT_UI_API_URL=http://localhost:4200/api 
-      
+      - PREFECT_UI_API_URL=http://192.168.21.251:4200/api
+      - PREFECT_SERVER_UI_URL=http://192.168.21.251:4200
       - PREFECT_SERVER_API_HOST=0.0.0.0
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     depends_on:
       postgres-database:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://127.0.0.1:4200/api/health\")'"]
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://0.0.0.0:4200/api/health\")'"]
       interval: 10s
       timeout: 5s
       retries: 5

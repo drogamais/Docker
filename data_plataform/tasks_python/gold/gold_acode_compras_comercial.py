@@ -9,14 +9,17 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
-from utils.monitor import DBMonitor
-from settings.config import DB_CONFIG, DUCKDB_SECRET_SQL, setup_minio_env, get_temp_csv_caminho
+from _utils.monitor import DBMonitor
+from _settings.config import DB_CONFIG, DUCKDB_SECRET_SQL, setup_minio_env, get_temp_csv_caminho
 
 # 1. Configura o ambiente (MinIO) automaticamente
 setup_minio_env()
 
 # 2. Define o caminho do CSV usando a função padronizada
 CSV_PATH = get_temp_csv_caminho("carga_gold_final.csv")
+
+# Caminho minio da tabela silver 
+S3_BASE = "s3://silver/silver_acode_compras_produto_comercial/**/*.parquet"
 
 # Caminho do arquivo definido globalmente para todas as funções verem
 TEMP_DIR = tempfile.gettempdir()
@@ -37,19 +40,18 @@ def duckdb_csv():
             SELECT 
                 CAST(hash(concat(EAN, Produto)) AS VARCHAR) AS id_produto,
                 CAST(hash(Desc_Marca) AS VARCHAR) AS id_marca,
-                CAST(hash(Fornecedor) AS VARCHAR) AS id_fornecedor,
                 CAST(hash(Fabricante) AS VARCHAR) AS id_fabricante,
                 CAST(hash(concat(Grupo, Sub_Classe)) AS VARCHAR) AS id_grupo_subclasse,
                 
-                CAST(Loja_CNPJ AS VARCHAR) AS loja_cnpj,
-                CAST(data_emissao AS DATE) AS data_emissao,
+                CAST(Fornecedor_CNPJ AS VARCHAR(20)) AS fornecedor_cnpj,
+                CAST(Loja_CNPJ AS VARCHAR(20)) AS loja_cnpj,
+                CAST(Ano_Mes AS DATE) AS Ano_Mes,
                 
-                CAST(Val_Prod_sem_STRet AS DECIMAL(15,4)) AS val_prod_sem_stret,
                 CAST(ACODE_Val_Total AS DECIMAL(15,4)) AS acode_val_total,
                 CAST(Qtd_Trib AS INT) AS qtd_trib,
                 
                 now() AS data_atualizacao
-            FROM read_parquet('s3://silver/silver_acode_compras_produto_comercial/**/*.parquet')
+            FROM read_parquet('{S3_BASE}')
         ) TO '{CSV_PATH}' (FORMAT CSV, DELIMITER ';', HEADER FALSE);
         """
         con.execute(query)
@@ -89,12 +91,11 @@ def csv_mariadb():
             id_fato INT AUTO_INCREMENT PRIMARY KEY,
             id_produto VARCHAR(50), 
             id_marca VARCHAR(50), 
-            id_fornecedor VARCHAR(50),
+            fornecedor_cnpj VARCHAR(20),
             id_fabricante VARCHAR(50), 
             id_grupo_subclasse VARCHAR(50),
             loja_cnpj VARCHAR(20), 
-            data_emissao DATE,
-            val_prod_sem_stret DECIMAL(15,4), 
+            Ano_Mes DATE,
             acode_val_total DECIMAL(15,4),
             qtd_trib INT, 
             data_atualizacao DATETIME
@@ -114,28 +115,33 @@ def csv_mariadb():
         LOAD DATA LOCAL INFILE '{CSV_PATH}'
         INTO TABLE {table_new}
         FIELDS TERMINATED BY ';' LINES TERMINATED BY '\\n'
-        (id_produto, id_marca, id_fornecedor, id_fabricante, id_grupo_subclasse, 
-         loja_cnpj, data_emissao, val_prod_sem_stret, acode_val_total, qtd_trib, data_atualizacao)
+        (id_produto, id_marca, fornecedor_cnpj, id_fabricante, id_grupo_subclasse, 
+         loja_cnpj, Ano_Mes, acode_val_total, qtd_trib, data_atualizacao)
         """
         cursor.execute(sql_load)
         conn.commit()
 
         monitor.stop()
         
-        # Índices
-        print("⚙️ Criando índices...")
-        # Índices em colunas de texto curtas (50 chars) são muito rápidos
-        indices = [
-            f"CREATE INDEX idx_produto ON {table_new} (id_produto)",
-            f"CREATE INDEX idx_marca ON {table_new} (id_marca)",
-            f"CREATE INDEX idx_fornecedor ON {table_new} (id_fornecedor)",
-            f"CREATE INDEX idx_fabricante ON {table_new} (id_fabricante)",
-            f"CREATE INDEX idx_grupo_subclasse ON {table_new} (id_grupo_subclasse)",
-            f"CREATE INDEX idx_loja_cnpj ON {table_new} (loja_cnpj)",
-            f"CREATE INDEX idx_data_emissao ON {table_new} (data_emissao)"
-        ]
-        for sql in indices: cursor.execute(sql)
-        print("✅ Índices criados.")
+        # 1. Otimização de Memória para a Sessão
+        print("🚀 Reservando RAM para ordenação de índices...")
+        cursor.execute("SET SESSION aria_sort_buffer_size = 512 * 1024 * 1024;") 
+        cursor.execute("SET SESSION sort_buffer_size = 512 * 1024 * 1024;")
+
+        # 2. Índices em Bloco
+        print("⚙️ Criando todos os índices em bloco (ALTER TABLE)...")
+        sql_indices = f"""
+        ALTER TABLE {table_new}
+            ADD INDEX idx_produto (id_produto),
+            ADD INDEX idx_marca (id_marca),
+            ADD INDEX idx_fornecedor_cnpj (fornecedor_cnpj),
+            ADD INDEX idx_fabricante (id_fabricante),
+            ADD INDEX idx_grupo_subclasse (id_grupo_subclasse),
+            ADD INDEX idx_loja_cnpj (loja_cnpj),
+            ADD INDEX idx_Ano_Mes (Ano_Mes);
+        """
+        cursor.execute(sql_indices)
+        print("✅ Índices criados com sucesso.")
 
         # Swap
         print("🔄 Trocando tabelas (Blue-Green Deployment)...")

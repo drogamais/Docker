@@ -7,14 +7,14 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
-from settings.config import DUCKDB_SECRET_SQL, setup_minio_env
+from _settings.config import DUCKDB_SECRET_SQL, setup_minio_env
 
 # 1. Configura ambiente MinIO
 setup_minio_env()
 
 # Definições de Caminho
 # O asterisco duplo (**) faz o DuckDB ler recursivamente todas as pastas de dia da Bronze
-BRONZE_PATH = "s3://bronze/acode_compras_produto_comercial/**/*.parquet"
+BRONZE_PATH = "s3://bronze/compras-acode/**/*.parquet"
 SILVER_PATH = "s3://silver/silver_acode_compras_produto_comercial/"
 
 def processar_silver():
@@ -33,32 +33,40 @@ def processar_silver():
             SELECT 
                 EAN,
                 Loja_CNPJ,
-                -- Agregações
-                MAX(Loja)              AS Loja,
-                MAX(Produto)           AS Produto,
-                data_emissao,
+                -- Converte '202502' (VARCHAR) direto para DATE (2025-02-01)
+                strptime(Ano_Mes, '%Y%m')::DATE AS Ano_Mes, 
+                
+                -- Coluna virtual (HIVE) para particionamento físico
+                ano, 
+                
+                -- Granularidade de Atributos (Detalhamento total)
+                Produto,
                 Fabricante,
-                Fornecedor,
+                MAX(Fornecedor) AS Fornecedor,
+                LPAD(CAST(Fornecedor_CNPJ AS VARCHAR), 14, '0') AS Fornecedor_CNPJ,
                 Grupo,
                 Sub_Classe,
                 Desc_Marca,
-                -- Métricas
-                SUM(Val_Prod_sem_STRet) AS Val_Prod_sem_STRet,
-                SUM(ACODE_Val_Total)    AS ACODE_Val_Total,
-                SUM(Qtd_Trib)           AS Qtd_Trib,
                 
-                -- Coluna Auxiliar para Particionamento
-                YEAR(data_emissao)      AS ano,
-                now()                   AS data_processamento
+                -- Métricas Consolidadas (Soma do mês)
+                SUM(ACODE_Val_Total) AS ACODE_Val_Total,
+                SUM(Qtd_Trib)        AS Qtd_Trib,
+                
+                -- Auditoria
+                now() AS data_atualizacao
 
-            FROM read_parquet('{BRONZE_PATH}')
+            FROM read_parquet('{BRONZE_PATH}', hive_partitioning = true)
+            -- Filtro de 24 meses para performance
             WHERE data_emissao >= (date_trunc('month', current_date) - INTERVAL 24 MONTH)
+            
             GROUP BY 
                 EAN,
                 Loja_CNPJ,
-                data_emissao,
+                Ano_Mes,
+                ano,
+                Produto,
                 Fabricante,
-                Fornecedor,
+                Fornecedor_CNPJ,
                 Grupo,
                 Sub_Classe,
                 Desc_Marca

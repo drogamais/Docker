@@ -1,0 +1,21 @@
+services:
+  wsl-clock-fix:
+    image: alpine:latest
+    container_name: wsl_clock_sync
+    
+    # Instala o pacote, e roda o loop a cada 60s
+    command: sh -c "apk add --no-cache util-linux tzdata && while true; do hwclock -s; sleep 60; done"
+    
+    privileged: true
+    restart: always
+    
+    environment:
+      - TZ=America/Sao_Paulo
+      
+    volumes:
+      # Mapeia o arquivo de fuso do Windows/Linux host para dentro (garantia extra)
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      
+    logging:
+      driver: none

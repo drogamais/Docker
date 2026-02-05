@@ -1,0 +1,44 @@
+name: CI - Verificação de Qualidade (Sem Deploy)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  testes-rapidos:
+    runs-on: ubuntu-latest
+    # Variáveis dummy para evitar o erro 'NoneType' no config.py
+    env:
+      DB_HOST: localhost
+      DB_USER: ci_user
+      DB_PASSWORD: ci_password
+      DB_NAME: ci_db
+      MINIO_ENDPOINT: localhost:9000
+      MINIO_ACCESS_KEY: ci_key
+      MINIO_SECRET_KEY: ci_secret
+      MINIO_REGION: us-east-1
+
+    steps:
+      - name: ⬇️ Baixar Código
+        uses: actions/checkout@v3
+
+      - name: 🐍 Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: 📦 Instalar Dependências
+        run: |
+          pip install -r prefect-worker/requirements.txt
+          pip install ruff bandit mypy pytest
+
+      - name: 🕵️ Teste - Checagem de Imports
+        run: python _ops/check_imports.py
+
+      - name: 🎨 Linter e Estilo
+        run: ruff check .
+
+      - name: 🛡️ Auditoria de Segurança
+        run: bandit -r tasks_python/ -x tasks_python/utils/__pycache__
