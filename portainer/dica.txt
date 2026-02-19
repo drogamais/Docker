@@ -1,0 +1,3 @@
+https://192.168.21.252:9443
+
+use o https e aceite o risco, não tem como conectar por 'http', não sei porquê

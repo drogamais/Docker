@@ -14,3 +14,5 @@ dev.duckdb
 dev.duckdb.wal
 db_prefect
 data
+backup_data
+data_portainer
