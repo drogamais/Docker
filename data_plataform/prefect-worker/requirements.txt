@@ -1,4 +1,4 @@
-prefect==3.6.13
+prefect==3.6.28.dev2
 duckdb
 sqlalchemy
 pymysql
